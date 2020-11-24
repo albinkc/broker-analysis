@@ -77,7 +77,6 @@ prediction_data <- broker_data %>%
 
 head(model_data)
 
-#!!DANGEROUS!!
 model_data[is.na(model_data)] <- 0
 prediction_data[is.na(prediction_data)] <- 0
 
@@ -90,9 +89,6 @@ sum(is.infinite(prediction_data$qr2))
 sum(is.infinite(prediction_data$qr3))
 
 
-
-## 1. generate a data frame called prediction_data with data through 2019 and calculate the quote ratio that can be used in a model for 2020 predictions
-
 #### If all GWP values are missing; zero all GWP values
 
 #*******
@@ -100,41 +96,20 @@ sum(is.infinite(prediction_data$qr3))
 model_all_gwp_missing <- apply(is.na(model_data),1,sum) == ncol(model_data)-1
 model_data[model_all_gwp_missing,-grep("up_no", colnames(model_data))] <- 0 
 
-
-#prediction_data <- broker_data %>%
-  #dplyr::select(Submissions_2016, 
-                #Submissions_2017,
-                #Submissions_2018,
-                #Submissions_2019,
-               # QuoteCount_2016,
-               # QuoteCount_2017,
-               # QuoteCount_2018,
-               # QuoteCount_2019,
-               # GWP_2018, 
-               # GWP_2019) %>%
-  #dplyr::mutate(up_no = factor(
-   # if_else(GWP_2019 > GWP_2018,  "up",  "no",  missing="no"))) %>%
- # dplyr::select(-GWP_2019, -GWP_2018) %>%
- # dplyr::rename(sub1 = Submissions_2016,
-               # sub2 = Submissions_2017,
-               # sub3 = Submissions_2018,
-               # sub4 = Submissions_2019,
-                #quo1 = QuoteCount_2016,
-                #quo2 = QuoteCount_2017,
-                #quo3 = QuoteCount_2018,
-                #quo4 = QuoteCount_2019)
-model_data <- broker_data %>%
- dplyr::select(GWP_2016, GWP_2017, GWP_2018, GWP_2019) %>%
- dplyr::mutate(up_no = factor(
- if_else(GWP_2019 > GWP_2018,  "up",  "no",  missing="no"))) %>%
- dplyr::select(-GWP_2019) %>%
- dplyr::rename(GWP1 = GWP_2016, 
- GWP2 = GWP_2017, 
- GWP3 = GWP_2018) 
+#model_data <- broker_data %>%
+ #dplyr::select(GWP_2016, GWP_2017, GWP_2018, GWP_2019) %>%
+ #dplyr::mutate(up_no = factor(
+ #if_else(GWP_2019 > GWP_2018,  "up",  "no",  missing="no"))) %>%
+ #dplyr::select(-GWP_2019) %>%
+ #dplyr::rename(GWP1 = GWP_2016, 
+ #GWP2 = GWP_2017, 
+ #GWP3 = GWP_2018) 
 head(prediction_data)
 
-broker_id = as.numeric(broker_data$broker_name)
+#broker_id = as.numeric(broker_data$broker_name)
+
 #Quote Ratio
+
 prediction_data <- prediction_data %>%
   dplyr::mutate(qr1 = quo1/sub1,
                 qr2 = quo2/sub2,
@@ -175,6 +150,7 @@ prediction_data$qr_4year[is.infinite(prediction_data$qr_4year)] <- 1.0
 prediction_data[is.na(prediction_data)] <- 0.0
 
 #Add Hit Ratio = policycount/quotecount
+
 prediction_data <- prediction_data %>%
   dplyr::mutate(hr1 = pol1/quo1,
                 hr2 = pol2/quo2,
@@ -203,6 +179,7 @@ prediction_data$hr4[is.infinite(prediction_data$hr4)] <- 1.0
 prediction_data$hr_4year[is.infinite(prediction_data$hr_4year)] <- 1.0
 
 #Add Success Ratio = policycount/submissions
+
 prediction_data <- prediction_data %>%
   dplyr::mutate(sr1 = pol1/sub1,
                 sr2 = pol2/sub2,
@@ -265,7 +242,8 @@ train_rows <- createDataPartition(model_data$up_no,
 train_broker <- model_data[train_rows,]
 test_broker <- model_data[-train_rows,]
 
-#model
+#rpart model
+
 rpart_broker <- rpart(up_no ~ ., data=train_broker)
 rpart_broker_predict <- predict(rpart_broker, test_broker, type="prob")
 rpart_broker_prediction <- prediction(rpart_broker_predict[,2], 
@@ -275,22 +253,12 @@ rpart_broker_performance <- performance(rpart_broker_prediction, "tpr", "fpr")
 rpart_broker_auc <- performance(rpart_broker_prediction, "auc")
 rpart_broker_auc@y.values[[1]]
 
-
-rpart_broker_2020_predict <- predict(rpart_broker, 
-                                     prediction_data,
-                                     type="prob")
-
-rpart_broker_2020 <- data.frame(broker_id = rownames(prediction_data),
-                                prediction = rpart_broker_2020_predict[,2])
-
 #write.csv(rpart_broker_2020, 
 #file="predictions2.csv",
 #quote=FALSE, 
 #row.names=FALSE)
 
 plot(rpart_broker_performance, col=1)
-
-
 
 #NN Model
 
@@ -349,7 +317,18 @@ broker_rf_prediction <- randomForest(up_no ~ .,
                           data = prediction_data, 
                           classwt=c(2,1),
                           importance=TRUE)
-predict(broker_rf_prediction, )
 broker_rf$importance
 
-plot(broker_rf_prediction)
+my_rf_predict <- predict(broker_rf_prediction, newdata=prediction_data, type="prob")
+my_rf_pred <- prediction(my_rf_predict[,1], prediction_data$up_no, label.ordering = c("up","no"))
+my_rf_perf <- performance(my_rf_pred, "tpr", "fpr")
+
+rf_broker_auc <- performance(my_rf_pred, "auc")
+rf_broker_auc@y.values[[1]]
+
+
+my_rf_2020 <- predict(broker_rf, prediction_data, type="class")
+
+output_predictions_2020 <- data.frame(broker_id = rownames(prediction_data), prediction = my_rf_2020[,2])
+
+write.csv(output_predictions_2020, file = "predictions_rf.csv", quote = FALSE, row.names = FALSE)
