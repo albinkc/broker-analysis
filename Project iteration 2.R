@@ -11,7 +11,9 @@ library(NeuralNetTools)
 
 set.seed(12345)
 
-broker_data <- read.table("C:\\Users\\jakob\\Desktop\\SCMA 648\\alchemy_broker_data.csv", 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+getwd()
+broker_data <- read.table("alchemy_broker_data.csv", 
                           header=TRUE,
                           colClasses = c(rep("character",3), rep("numeric", 29)),
                           sep=",",
@@ -247,4 +249,3 @@ plot(lend_lr_perf, col=2, add=TRUE)
 
 lr_broker_auc <- performance(lend_lr_pred, "auc")
 lr_broker_auc@y.values[[1]]
-
