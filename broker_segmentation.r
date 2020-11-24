@@ -40,10 +40,14 @@ broker_data[is.na(broker_data)] = 0
 
 #Remove outliers
 
+library('outliers')
+outliers <- apply(broker_data[colnames(broker_data)],2,function(x) which(x == outlier(x)))
+broker_data <- broker_data[-unique(unlist(outliers)),]
 
 #Scaling
 
 broker_data_scaled = scale(broker_data)
+
 #Clustering
 
 broker_kmeans = kmeans(broker_data_scaled, centers=5)
