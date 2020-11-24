@@ -52,22 +52,29 @@ model_data <- model_data %>%
                 qr3 = quo3/sub3,
                 qr_3year = (quo1+quo2+quo3)/(sub1+sub2+sub3))
 
-## in base R,
-# model_data$qr1 <- model_data$quo1/model_data$sub1
-# model_data$qr2 <- model_data$quo2/model_data$sub2
-# ...
-# model_data$qr_3year <- (model_data$quo1+model_data$quo2+model_data$quo3)/(model_data$sub1+model_data$sub2+model_data$sub3)
-
 head(model_data)
 summary(model_data)
 
 model_data$qr1[is.na(model_data$qr1)] <- 0.0
+model_data$qr2[is.na(model_data$qr2)] <- 0.0
+model_data$qr3[is.na(model_data$qr3)] <- 0.0
+model_data$qr_3year[is.na(model_data$qr_3year)] <- 0.0
 
 model_data$qr1[is.infinite(model_data$qr1)] <- 1.0
-
+model_data$qr2[is.infinite(model_data$qr2)] <- 1.0
+model_data$qr3[is.infinite(model_data$qr3)] <- 1.0
+model_data$qr_3year[is.infinite(model_data$qr_3year)] <- 1.0
 
 
 ## 1. generate a data frame called prediction_data with data through 2019 and calculate the quote ratio that can be used in a model for 2020 predictions
+
+#### If all GWP values are missing; zero all GWP values
+
+#*******
+#######check if this makes any difference
+model_all_gwp_missing <- apply(is.na(model_data),1,sum) == ncol(model_data)-1
+model_data[model_all_gwp_missing,-grep("up_no", colnames(model_data))] <- 0 
+
 
 prediction_data <- broker_data %>%
   dplyr::select(Submissions_2016, 
@@ -140,6 +147,7 @@ train_rows <- createDataPartition(model_data$up_no,
 train_broker <- model_data[train_rows,]
 test_broker <- model_data[-train_rows,]
 
+#model
 rpart_broker <- rpart(up_no ~ ., data=train_broker)
 rpart_broker_predict <- predict(rpart_broker, test_broker, type="prob")
 rpart_broker_prediction <- prediction(rpart_broker_predict[,2], 
