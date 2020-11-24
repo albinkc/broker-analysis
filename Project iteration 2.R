@@ -322,6 +322,32 @@ plot(my_nn_perf, col=4, add=TRUE)
 
 ##RF
 
+
+###RF TEST CODE
+broker_rf <- randomForest(up_no ~ ., 
+                          data = train_broker, 
+                          classwt=c(2,1),
+                          importance=TRUE)
+#broker_predict_rf <- predict(broker_rf, newdata=test_broker, type="class")
+
+my_rf_predict <- predict(broker_rf, newdata=test_broker, type="prob")
+my_rf_pred <- prediction(my_rf_predict[,1], test_broker$up_no, label.ordering = c("up","no"))
+my_rf_perf <- performance(my_rf_pred, "tpr", "fpr")
+#plot(my_rf_perf, col=2,add=TRUE)
+
+rf_broker_auc <- performance(my_rf_pred, "auc")
+rf_broker_auc@y.values[[1]]
+
+
+my_rf_2020 <- predict(broker_rf, prediction_data, type="class")
+
+output_predictions_2020 <- data.frame(broker_id = rownames(prediction_data), prediction = my_rf_2020[,2])
+
+write.csv(output_predictions_2020, file = "predictions_rf.csv", quote = FALSE, row.names = FALSE)
+
+
+###END RF TEST CODE
+
 broker_rf <- randomForest(up_no ~ ., 
                           data = train_broker, 
                           classwt=c(2,1),
