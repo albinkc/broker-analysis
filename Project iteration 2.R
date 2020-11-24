@@ -10,8 +10,8 @@ library(nnet)
 library(NeuralNetTools)
 
 set.seed(12345)
-
-broker_data <- read.table("C:\\Users\\jakob\\Desktop\\SCMA 648\\alchemy_broker_data.csv", 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+broker_data <- read.table("alchemy_broker_data.csv", 
                           header=TRUE,
                           colClasses = c(rep("character",3), rep("numeric", 29)),
                           sep=",",
