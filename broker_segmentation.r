@@ -11,21 +11,21 @@ broker_data = read.table("alchemy_broker_data.csv",
                           row.names=1)
 
 broker_data <- broker_data %>%
-  dplyr::select(Submissions_2017,
+  dplyr::select(Submissions_2016,
+                Submissions_2017,
                 Submissions_2018,
-                Submissions_2019,
+                QuoteCount_2016,
                 QuoteCount_2017,
                 QuoteCount_2018,
-                QuoteCount_2019,
+                PolicyCount_2016,
                 PolicyCount_2017,
                 PolicyCount_2018,
-                PolicyCount_2019,
-                GWP_2017,
-                GWP_2018, 
-                GWP_2019,
+                GWP_2016,
+                GWP_2017, 
+                GWP_2018,
+                AvgTIV_2016,
                 AvgTIV_2017,
-                AvgTIV_2018,
-                AvgTIV_2019)
+                AvgTIV_2018)
 
 #Handling NA's
 
@@ -33,12 +33,25 @@ broker_data <- broker_data %>%
 
 broker_data = broker_data[rowSums(is.na(broker_data)) <= 10,]
 
-colnames(broker_data)
+summary(broker_data)
+##Impute NA's with 0
+broker_data[is.na(broker_data)] = 0
 
 
 #Remove outliers
 
+
+#Scaling
+
+broker_data_scaled = scale(broker_data)
 #Clustering
 
-broker_kmeans = kmeans(lending_data_sub, centers=5)
+broker_kmeans = kmeans(broker_data_scaled, centers=5)
+summary(broker_kmeans)
+
+#PCA
+
+broker_data_pca <- prcomp(broker_data_scaled, retx=TRUE)
+broker_data_pca$rotation[,1:2]
+plot(broker_data_pca$x[,1:2], col=broker_kmeans$cluster, pch=broker_kmeans$cluster)
 
