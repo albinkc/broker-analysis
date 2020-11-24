@@ -26,6 +26,9 @@ model_data <- broker_data %>%
                 QuoteCount_2016,
                 QuoteCount_2017,
                 QuoteCount_2018,
+                PolicyCount_2016,
+                PolicyCount_2017,
+                PolicyCount_2018,
                 GWP_2018, 
                 GWP_2019) %>%
   dplyr::mutate(up_no = factor(
@@ -39,16 +42,16 @@ model_data <- broker_data %>%
                 quo3 = QuoteCount_2018,
                 pol1 = PolicyCount_2016,
                 pol2 = PolicyCount_2017,
-                pol3 = PolicyCount_2018,
-                pol4 = PolicyCount_2019)
-## in base R,
-# names(model_data)[names(model_data) == "Submissions_2016"] <- sub1
-# names(model_data)[names(model_data) == "Submissions_2017"] <- sub2
-# ...
+                pol3 = PolicyCount_2018)
 
 head(model_data)
 
+#!!DANGEROUS!!
 model_data[is.na(model_data)] <- 0
+
+sum(is.infinite(model_data$qr1))
+sum(is.infinite(model_data$qr2))
+sum(is.infinite(model_data$qr3))
 
 model_data <- model_data %>%
   dplyr::mutate(qr1 = quo1/sub1,
@@ -68,7 +71,6 @@ model_data$qr1[is.infinite(model_data$qr1)] <- 1.0
 model_data$qr2[is.infinite(model_data$qr2)] <- 1.0
 model_data$qr3[is.infinite(model_data$qr3)] <- 1.0
 model_data$qr_3year[is.infinite(model_data$qr_3year)] <- 1.0
-
 
 ## 1. generate a data frame called prediction_data with data through 2019 and calculate the quote ratio that can be used in a model for 2020 predictions
 
@@ -106,7 +108,7 @@ prediction_data <- broker_data %>%
 head(prediction_data)
 
 
-#Add Quote Ratio
+#Quote Ratio
 prediction_data <- prediction_data %>%
   dplyr::mutate(qr1 = quo1/sub1,
                 qr2 = quo2/sub2,
@@ -116,9 +118,11 @@ prediction_data <- prediction_data %>%
 
 model_data[is.na(model_data)] <- 0.0
 
+model_data$qr1[is.infinite(model_data$qr1)] <- 1.0
 model_data$qr2[is.infinite(model_data$qr2)] <- 1.0
 model_data$qr3[is.infinite(model_data$qr3)] <- 1.0
-model_data$qr_3year[is.infinite(model_data$qr_3year)] <- 1.0
+model_data$qr4[is.infinite(model_data$qr4)] <- 1.0
+model_data$qr_4year[is.infinite(model_data$qr_4year)] <- 1.0
 
 #Add Hit Ratio = policycount/quotecount
 prediction_data <- prediction_data %>%
@@ -130,9 +134,26 @@ prediction_data <- prediction_data %>%
 
 model_data[is.na(model_data)] <- 0.0
 
+model_data$hr1[is.infinite(model_data$hr1)] <- 1.0
 model_data$hr2[is.infinite(model_data$hr2)] <- 1.0
 model_data$hr3[is.infinite(model_data$hr3)] <- 1.0
-model_data$hr_3year[is.infinite(model_data$hr_3year)] <- 1.0
+model_data$hr_3year[is.infinite(model_data$hr_4year)] <- 1.0
+
+
+#Add Success Ratio = policycount/submissions
+prediction_data <- prediction_data %>%
+  dplyr::mutate(sr1 = pol1/sub1,
+                sr2 = pol2/sub2,
+                sr3 = pol3/sub3,
+                sr4 = pol4/sub4,
+                sr_4year = (pol1+pol2+pol3+pol4)/(sub1+sub2+sub3+sub4))
+
+model_data[is.na(model_data)] <- 0.0
+
+model_data$sr1[is.infinite(model_data$sr1)] <- 1.0
+model_data$sr2[is.infinite(model_data$sr2)] <- 1.0
+model_data$sr3[is.infinite(model_data$sr3)] <- 1.0
+model_data$sr_3year[is.infinite(model_data$sr_4year)] <- 1.0
 
 
 #rpart model
@@ -188,7 +209,7 @@ rpart_broker_2020 <- data.frame(broker_id = rownames(prediction_data),
                                 prediction = rpart_broker_2020_predict[,2])
 
 #write.csv(rpart_broker_2020, 
-          #file="predictions.csv",
+          #file="predictions2.csv",
           #quote=FALSE, 
           #row.names=FALSE)
 
