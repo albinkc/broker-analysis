@@ -36,7 +36,11 @@ model_data <- broker_data %>%
                 sub3 = Submissions_2018,
                 quo1 = QuoteCount_2016,
                 quo2 = QuoteCount_2017,
-                quo3 = QuoteCount_2018)
+                quo3 = QuoteCount_2018,
+                pol1 = PolicyCount_2016,
+                pol2 = PolicyCount_2017,
+                pol3 = PolicyCount_2018,
+                pol4 = PolicyCount_2019)
 ## in base R,
 # names(model_data)[names(model_data) == "Submissions_2016"] <- sub1
 # names(model_data)[names(model_data) == "Submissions_2017"] <- sub2
@@ -101,6 +105,8 @@ prediction_data <- broker_data %>%
 
 head(prediction_data)
 
+
+#Add Quote Ratio
 prediction_data <- prediction_data %>%
   dplyr::mutate(qr1 = quo1/sub1,
                 qr2 = quo2/sub2,
@@ -113,6 +119,22 @@ model_data[is.na(model_data)] <- 0.0
 model_data$qr2[is.infinite(model_data$qr2)] <- 1.0
 model_data$qr3[is.infinite(model_data$qr3)] <- 1.0
 model_data$qr_3year[is.infinite(model_data$qr_3year)] <- 1.0
+
+#Add Hit Ratio = policycount/quotecount
+prediction_data <- prediction_data %>%
+  dplyr::mutate(hr1 = pol1/quo1,
+                hr2 = pol2/quo2,
+                hr3 = pol3/quo3,
+                hr4 = pol4/quo4,
+                hr_4year = (pol1+pol2+pol3+pol4)/(quo1+quo2+quo3+quo4))
+
+model_data[is.na(model_data)] <- 0.0
+
+model_data$hr2[is.infinite(model_data$hr2)] <- 1.0
+model_data$hr3[is.infinite(model_data$hr3)] <- 1.0
+model_data$hr_3year[is.infinite(model_data$hr_3year)] <- 1.0
+
+
 #rpart model
 
 #model_data <- broker_data %>%
